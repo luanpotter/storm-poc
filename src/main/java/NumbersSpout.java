@@ -7,19 +7,36 @@ import org.apache.storm.tuple.Values;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NumbersSpout extends BaseRichSpout {
 
+    private final int max;
     private SpoutOutputCollector collector;
-    private Integer n;
+
+    private static final AtomicInteger count = new AtomicInteger();
+
+    public NumbersSpout(int max) {
+        this.max = max;
+    }
 
     public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector collector) {
         this.collector = collector;
-        this.n = 0;
     }
 
     public void nextTuple() {
-        collector.emit(new Values(factorial(n) + n));
+        int n = count.getAndIncrement();
+        if (n >= max) {
+            this.close();
+            return;
+        }
+        int number = create(n);
+        System.out.println("-------- EMIT" + number);
+        collector.emit(new Values(number));
+    }
+
+    private int create(int n) {
+        return factorial(n) + n + 1;
     }
 
     private static Integer factorial(Integer n) {
@@ -30,6 +47,6 @@ public class NumbersSpout extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("numbers"));
+        outputFieldsDeclarer.declare(new Fields("number"));
     }
 }
