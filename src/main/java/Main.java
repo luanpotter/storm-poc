@@ -10,21 +10,24 @@ import org.apache.storm.utils.Utils;
 public class Main {
 
     public static void main(String[] args) throws InvalidTopologyException, AuthorizationException, AlreadyAliveException {
-        StormTopology topology = createTopology();
+        int max = Integer.parseInt(args[0]);
+        int sleep = Integer.parseInt(args[1]);
+
+        StormTopology topology = createTopology(max);
 
         LocalCluster cluster = new LocalCluster();
         Config config = new Config();
         config.setDebug(true);
         cluster.submitTopology("storm-test", config, topology);
-        Utils.sleep(20000);
-        System.err.println(Counter.TOTAL_SUM.get());
+        Utils.sleep(sleep);
+        System.out.println("-------- RESULT" + Counter.TOTAL_SUM.get());
         cluster.killTopology("storm-test");
         cluster.shutdown();
     }
 
-    private static StormTopology createTopology() {
+    private static StormTopology createTopology(int max) {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("numbers", new NumbersSpout(10), 10);
+        builder.setSpout("numbers", new NumbersSpout(max), 10);
         builder.setBolt("isPrime", new IsPrimeBolt(), 3).shuffleGrouping("numbers");
         builder.setBolt("sum", new Counter(), 1).shuffleGrouping("isPrime");
 
